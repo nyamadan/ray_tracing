@@ -2,7 +2,12 @@ cmake_minimum_required(VERSION 3.0.0)
 project(ray_tracing VERSION 0.1.0)
 
 set(APP_SOURCES
-    main.cpp
+    src/main.cpp
+    src/shader_utils.cpp
+)
+
+set(GL3W_SOURCES
+    gl3w/src/gl3w.c
 )
 
 set(IMGUI_SOURCES
@@ -31,25 +36,22 @@ elseif(MSVC)
     include_directories(${OPENGL_INCLUDE_DIRS})
 
     # gl3w
-    add_subdirectory(./gl3w)
     include_directories(./gl3w/include)
 
     # GLFW
     add_subdirectory(./glfw)
     include_directories(./glfw/include)
-    include_directories(${CMAKE_CURRENT_BINARY_DIR}/glfw/src)
 
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    add_executable(ray_tracing ${APP_SOURCES} ${IMGUI_SOURCES})
+    add_executable(ray_tracing ${APP_SOURCES} ${IMGUI_SOURCES} ${GL3W_SOURCES})
     add_dependencies(ray_tracing glfw)
-    target_link_libraries(ray_tracing ${OPENGL_LIBRARIES} glfw gl3w)
+    target_link_libraries(ray_tracing ${OPENGL_LIBRARIES} glfw)
 else(APPLE)
     # OpenGL
     find_package(OpenGL REQUIRED)
     include_directories(${OPENGL_INCLUDE_DIRS})
 
     # gl3w
-    add_subdirectory(./gl3w)
     include_directories(./gl3w/include)
 
     # GLFW
@@ -57,8 +59,8 @@ else(APPLE)
     include_directories(./glfw/include)
     include_directories(${CMAKE_CURRENT_BINARY_DIR}/glfw/src)
 
-    add_executable(ray_tracing ${APP_SOURCES} ${IMGUI_SOURCES})
-    target_link_libraries(ray_tracing ${OPENGL_LIBRARIES} glfw gl3w)
+    add_executable(ray_tracing ${APP_SOURCES} ${IMGUI_SOURCES} ${GL3W_SOURCES})
+    target_link_libraries(ray_tracing ${OPENGL_LIBRARIES} glfw)
 endif()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
