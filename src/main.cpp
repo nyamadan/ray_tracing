@@ -65,8 +65,6 @@ static void update(void *)
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::ColorEdit3("clear color", (float *)&clearColor); // Edit 3 floats representing a color
 
-    bool needsReload = false;
-
     ImGui::Checkbox("Demo Window", &showDemoWindow);      // Edit bools storing our windows open/close state
 
     if (showDemoWindow)
@@ -74,7 +72,6 @@ static void update(void *)
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
-    // Rendering
     ImGui::Render();
 
     glfwMakeContextCurrent(window);
@@ -83,14 +80,15 @@ static void update(void *)
     glViewport(0, 0, width, height);
     glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    glfwMakeContextCurrent(window);
 
     glUseProgram(program);
     glUniform2f(uResolution, static_cast<GLfloat>(width), static_cast<GLfloat>(height));
     glBindVertexArray(vertexArraysObject);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwMakeContextCurrent(window);
     glfwSwapBuffers(window);
 
     for(GLint error = glGetError(); error; error = glGetError()) {
@@ -123,7 +121,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
 
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window = glfwCreateWindow(1024, 768, "Ray Tracing", NULL, NULL);
     if (!window)
