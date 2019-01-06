@@ -1,27 +1,8 @@
 #include "common.hpp"
 #include <iostream>
+#include <fstream>
 
 #include "shader_utils.hpp"
-
-static const char* const VsSource =
-    "layout (location = 0) in vec3 aPosition;\n"
-    "\n"
-    "void main(void){\n"
-    "  gl_Position = vec4(aPosition, 1.0);\n"
-    "}";
-
-static const char* const FsSource =
-    "precision mediump float;\n"
-    "\n"
-    "uniform vec2 resolution;\n"
-    "\n"
-    "out vec4 fragColor;\n"
-    "\n"
-    "void main(void){\n"
-    "  vec2 p = gl_FragCoord.xy / resolution;\n"
-    "  vec3 rgb = vec3(p, 0.0);\n"
-    "  fragColor = vec4(rgb, 1.0);\n"
-    "}";
 
 static const int PositionLocation = 0;
 static const int PositionSize = 3;
@@ -54,7 +35,6 @@ static void glfw_error_callback(int error, const char* description)
 static void update(void *)
 {
     static bool showDemoWindow = false;
-    static ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     static int width, height;
     static double xpos, ypos;
 
@@ -63,7 +43,6 @@ static void update(void *)
     ImGui::NewFrame();
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::ColorEdit3("clear color", (float *)&clearColor); // Edit 3 floats representing a color
 
     ImGui::Checkbox("Demo Window", &showDemoWindow);      // Edit bools storing our windows open/close state
 
@@ -78,7 +57,6 @@ static void update(void *)
     glfwGetFramebufferSize(window, &width, &height);
     glfwGetCursorPos(window, &xpos, &ypos);
     glViewport(0, 0, width, height);
-    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(program);
@@ -96,6 +74,23 @@ static void update(void *)
     }
 
     glfwPollEvents();
+}
+
+static void readText(char *&memblock, const char * const path)
+{
+    std::ifstream file(path, std::ios::in | std::ios::ate);
+
+    char * mem = nullptr;
+    if(!file.is_open()) {
+        return;
+    }
+
+    const size_t size = file.tellg().seekpos();
+    memblock = new char[size + 1];
+    file.seekg(0, std::ios::beg);
+    file.read(memblock, size);
+    memblock[size] = '\0';
+    file.close();
 }
 
 int main(void)
@@ -176,8 +171,14 @@ int main(void)
     glBindVertexArray(0);
 
     // Compile shaders.
-    const char * const vsSources[2] = {GlslVersion, VsSource};
-    const char * const fsSources[2] = {GlslVersion, FsSource};
+    char *vsSource = nullptr;
+    readText(vsSource, "./assets/basic.vert");
+
+    char *fsSource = nullptr;
+    readText(fsSource, "./assets/basic.frag");
+
+    const char * const vsSources[2] = {GlslVersion, vsSource};
+    const char * const fsSources[2] = {GlslVersion, fsSource};
 
     const GLuint handleVS = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(handleVS, 2, vsSources, NULL);
@@ -199,6 +200,9 @@ int main(void)
 
     glDeleteShader(handleVS);
     glDeleteShader(handleFS);
+
+    delete [] vsSource;
+    delete [] fsSource;
 
 #ifndef __EMSCRIPTEN__
     glfwSwapInterval(1);
