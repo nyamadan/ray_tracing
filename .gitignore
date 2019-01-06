@@ -1,4 +1,7 @@
+.vs
+.vscode
 build
+imgui.ini
 
 ### C++
 

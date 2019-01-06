@@ -1,3 +1,5 @@
+#include <iostream>
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #define GLFW_INCLUDE_ES3
@@ -13,6 +15,51 @@
 #include <imgui.h>
 #include <examples/imgui_impl_glfw.h>
 #include <examples/imgui_impl_opengl3.h>
+
+void update(GLFWwindow *window)
+{
+    static bool showDemoWindow = false;
+    static ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    static int displayW, displayH;
+    static double xpos, ypos;
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::ColorEdit3("clear color", (float *)&clearColor); // Edit 3 floats representing a color
+
+    bool needsReload = false;
+
+    ImGui::Checkbox("Demo Window", &showDemoWindow);      // Edit bools storing our windows open/close state
+
+    if (showDemoWindow)
+    {
+        ImGui::ShowDemoWindow(&showDemoWindow);
+    }
+
+    for(GLint error = glGetError(); error; error = glGetError()) {
+        std::cerr << "error code: " << std::hex << std::showbase << error << std::endl;
+    }
+
+    // Rendering
+    ImGui::Render();
+
+    glfwMakeContextCurrent(window);
+    glfwGetFramebufferSize(window, &displayW, &displayH);
+    glfwGetCursorPos(window, &xpos, &ypos);
+    glViewport(0, 0, displayW, displayH);
+    glClearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    glfwMakeContextCurrent(window);
+
+    // do something...
+
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+}
 
 int main(void)
 {
@@ -35,11 +82,13 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #endif
 
+#ifdef _DEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
+#endif
+
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+    window = glfwCreateWindow(1024, 768, "Ray Tracing", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -57,7 +106,8 @@ int main(void)
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
     bool err = gladLoadGL() == 0;
 #else
-    bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader is likely to requires some form of initialization.
+    bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader
+                      // is likely to requires some form of initialization.
 #endif
     if (err)
     {
@@ -74,27 +124,25 @@ int main(void)
     ImGui_ImplOpenGL3_Init("#version 300 es");
 #endif
 
-    ImGuiIO &io = ImGui::GetIO();
-    // io.Fonts->AddFontFromFileTTF("./assets/Roboto-Regular.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-
     ImGui::StyleColorsDark();
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+#ifndef __EMSCRIPTEN__
+    glfwSwapInterval(1);
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
+        update(window);
     }
 
     glfwTerminate();
+#else
+    emscripten_set_main_loop_arg(reinterpret_cast<em_arg_callback_func>(update), window, 0, 0);
+    glfwSwapInterval(1);
+#endif
+
     return 0;
 }
