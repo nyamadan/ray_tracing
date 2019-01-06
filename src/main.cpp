@@ -1,8 +1,11 @@
-#include "common.hpp"
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include "common.hpp"
 
 #include "shader_utils.hpp"
+
+static const int Width = 200;
+static const int Height = 100;
 
 static const int PositionLocation = 0;
 static const int PositionSize = 3;
@@ -12,29 +15,30 @@ static GLFWwindow *window = nullptr;
 static GLuint vIndex = 0;
 static GLuint vPosition = 0;
 static GLuint vertexArraysObject = 0;
+
+static GLint uTime = 0;
+static GLint uMouse = 0;
 static GLint uResolution = 0;
+static GLint uImage0 = 0;
+
+static GLuint texImage0 = 0;
+
 static GLuint program = 0;
 
-static const GLfloat positions[] = {
-    -1.0f, 1.0f, 0.0f,
-    1.0f, 1.0f, 0.0f,
-    -1.0f, -1.0f, 0.0f,
-    1.0f, -1.0f, 0.0f
-};
+static char *pixels = nullptr;
 
-static const GLushort indices[] = {
-    0, 2, 1,
-    1, 2, 3
-};
+static const GLfloat positions[] = {-1.0f, 1.0f,  0.0f, 1.0f, 1.0f,  0.0f,
+                                    -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f};
 
-static void glfw_error_callback(int error, const char* description)
-{
-    std::cerr << "Error " << error << ": " << description << std::endl;
+static const GLushort indices[] = {0, 2, 1, 1, 2, 3};
+
+static void glfw_error_callback(int error, const char *description) {
+    std::cerr << "error " << error << ": " << description << std::endl;
 }
 
-static void update(void *)
-{
+static void update(void *) {
     static bool showDemoWindow = false;
+    static bool showDebugWindow = false;
     static int width, height;
     static double xpos, ypos;
 
@@ -42,12 +46,17 @@ static void update(void *)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    if (showDebugWindow) {
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                    1000.0f / ImGui::GetIO().Framerate,
+                    ImGui::GetIO().Framerate);
 
-    ImGui::Checkbox("Demo Window", &showDemoWindow);      // Edit bools storing our windows open/close state
+        ImGui::Checkbox("Demo Window",
+                        &showDemoWindow);  // Edit bools storing our windows
+                                           // open/close state
+    }
 
-    if (showDemoWindow)
-    {
+    if (showDemoWindow) {
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
@@ -60,7 +69,23 @@ static void update(void *)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(program);
-    glUniform2f(uResolution, static_cast<GLfloat>(width), static_cast<GLfloat>(height));
+
+    if (uResolution >= 0) {
+        glUniform2f(uResolution, static_cast<GLfloat>(width),
+                    static_cast<GLfloat>(height));
+    }
+
+    if (uMouse >= 0) {
+        glUniform2f(uMouse, static_cast<GLfloat>(xpos),
+                    static_cast<GLfloat>(ypos));
+    }
+
+    if (uImage0 >= 0) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texImage0);
+        glUniform1i(uImage0, 0);
+    }
+
     glBindVertexArray(vertexArraysObject);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0);
 
@@ -69,23 +94,23 @@ static void update(void *)
     glfwMakeContextCurrent(window);
     glfwSwapBuffers(window);
 
-    for(GLint error = glGetError(); error; error = glGetError()) {
-        std::cerr << "error code: " << std::hex << std::showbase << error << std::endl;
+    for (GLint error = glGetError(); error; error = glGetError()) {
+        std::cerr << "error code: " << std::hex << std::showbase << error
+                  << std::endl;
     }
 
     glfwPollEvents();
 }
 
-static void readText(char *&memblock, const char * const path)
-{
+static void readText(char *&memblock, const char *const path) {
     std::ifstream file(path, std::ios::in | std::ios::ate);
 
-    char * mem = nullptr;
-    if(!file.is_open()) {
+    char *mem = nullptr;
+    if (!file.is_open()) {
         return;
     }
 
-    const size_t size = file.tellg().seekpos();
+    const size_t size = static_cast<size_t>(file.tellg());
     memblock = new char[size + 1];
     file.seekg(0, std::ios::beg);
     file.read(memblock, size);
@@ -93,11 +118,9 @@ static void readText(char *&memblock, const char * const path)
     file.close();
 }
 
-int main(void)
-{
+int main(void) {
     /* Initialize the library */
-    if (!glfwInit())
-        return -1;
+    if (!glfwInit()) return -1;
 
 #ifdef __EMSCRIPTEN__
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -118,9 +141,8 @@ int main(void)
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    window = glfwCreateWindow(1024, 768, "Ray Tracing", NULL, NULL);
-    if (!window)
-    {
+    window = glfwCreateWindow(Width, Height, "Ray Tracing", NULL, NULL);
+    if (!window) {
         glfwTerminate();
         return -1;
     }
@@ -129,18 +151,7 @@ int main(void)
 
 #ifndef __EMSCRIPTEN__
     // Initialize OpenGL loader
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-    bool err = gl3wInit() != 0;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-    bool err = glewInit() != GLEW_OK;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-    bool err = gladLoadGL() == 0;
-#else
-    bool err = false; // If you use IMGUI_IMPL_OPENGL_LOADER_CUSTOM, your loader
-                      // is likely to requires some form of initialization.
-#endif
-    if (err)
-    {
+    if (gl3wInit() != 0) {
         return 1;
     }
 #endif
@@ -160,15 +171,48 @@ int main(void)
 
     glBindVertexArray(vertexArraysObject);
     glBindBuffer(GL_ARRAY_BUFFER, vPosition);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 12, positions, GL_STATIC_DRAW);
-    glVertexAttribPointer(PositionLocation, PositionSize, GL_FLOAT, GL_FALSE, 0, 0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 12, positions,
+                 GL_STATIC_DRAW);
+    glVertexAttribPointer(PositionLocation, PositionSize, GL_FLOAT, GL_FALSE, 0,
+                          0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vIndex);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * 6, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * 6, indices,
+                 GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0);
+
+    // Initialize Textures
+    pixels = new char[Width * Height * 3];
+
+    for (int j = Height - 1; j >= 0; j--) {
+        for (int i = 0; i < Width; i++) {
+            float r = float(i) / float(Width);
+            float g = float(j) / float(Height);
+            float b = 0.2f;
+
+            int ir = int(255.99f * r);
+            int ig = int(255.99f * g);
+            int ib = int(255.99f * b);
+
+            int offset = (j * Width + i) * 3;
+            pixels[offset + 0] = ir;
+            pixels[offset + 1] = ig;
+            pixels[offset + 2] = ib;
+        }
+    }
+
+    glGenTextures(1, &texImage0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, texImage0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Width, Height, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, pixels);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     // Compile shaders.
     char *vsSource = nullptr;
@@ -177,8 +221,8 @@ int main(void)
     char *fsSource = nullptr;
     readText(fsSource, "./assets/basic.frag");
 
-    const char * const vsSources[2] = {GlslVersion, vsSource};
-    const char * const fsSources[2] = {GlslVersion, fsSource};
+    const char *const vsSources[2] = {GlslVersion, vsSource};
+    const char *const fsSources[2] = {GlslVersion, fsSource};
 
     const GLuint handleVS = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(handleVS, 2, vsSources, NULL);
@@ -196,19 +240,21 @@ int main(void)
     glLinkProgram(program);
     checkLinked(program);
 
+    uImage0 = glGetUniformLocation(program, "image0");
+    uTime = glGetUniformLocation(program, "time");
+    uMouse = glGetUniformLocation(program, "mouse");
     uResolution = glGetUniformLocation(program, "resolution");
 
     glDeleteShader(handleVS);
     glDeleteShader(handleFS);
 
-    delete [] vsSource;
-    delete [] fsSource;
+    delete[] vsSource;
+    delete[] fsSource;
 
 #ifndef __EMSCRIPTEN__
     glfwSwapInterval(1);
 
-    while (!glfwWindowShouldClose(window))
-    {
+    while (!glfwWindowShouldClose(window)) {
         update(nullptr);
     }
 

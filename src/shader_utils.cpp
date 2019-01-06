@@ -43,7 +43,7 @@ int checkCompiled(unsigned int shader)
         glGetShaderInfoLog(shader, max_len, &max_len, err_log);
         glDeleteShader(shader);
 
-        std::cerr << "Shader compilation failed: " << err_log;
+        std::cerr << "Shader compilation failed: " << err_log << std::endl;
 
         free(err_log);
     }
