@@ -105,7 +105,6 @@ static void update(void *) {
 static void readText(char *&memblock, const char *const path) {
     std::ifstream file(path, std::ios::in | std::ios::ate);
 
-    char *mem = nullptr;
     if (!file.is_open()) {
         return;
     }
@@ -227,7 +226,7 @@ int main(void) {
     const GLuint handleVS = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(handleVS, 2, vsSources, NULL);
     glCompileShader(handleVS);
-    checkCompiled(handleVS);
+    assert(checkCompiled(handleVS));
 
     const GLuint handleFS = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(handleFS, 2, fsSources, NULL);
@@ -238,7 +237,7 @@ int main(void) {
     glAttachShader(program, handleVS);
     glAttachShader(program, handleFS);
     glLinkProgram(program);
-    checkLinked(program);
+    assert(checkLinked(program));
 
     uImage0 = glGetUniformLocation(program, "image0");
     uTime = glGetUniformLocation(program, "time");
