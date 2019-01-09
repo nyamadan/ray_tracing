@@ -36,8 +36,21 @@ static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
 }
 
-Vector3 color(const Ray& r) {
-    Vector3 normalizedDirection = normalize(r.direction());
+bool hitSphere(const Vector3 &center, float radius, const Ray &ray) {
+    Vector3 oc = ray.origin() - center;
+    float a = dot(ray.direction(), ray.direction());
+    float b = 2.0f * dot(oc, ray.direction());
+    float c = dot(oc, oc) - radius * radius;
+
+    return b * b - 4.0f * a * c >= 0.0f;
+}
+
+Vector3 color(const Ray& ray) {
+    if (hitSphere(Vector3(0.0f, 0.0f, -1.0f), 0.5f, ray)) {
+        return Vector3(1.0f, 0.0f, 0.0f);
+    }
+
+    Vector3 normalizedDirection = normalize(ray.direction());
     float t = 0.5f * (normalizedDirection.y() + 1.0f);
     return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) + t * Vector3(0.5, 0.7f, 1.0f);
 }
