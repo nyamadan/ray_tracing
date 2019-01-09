@@ -1,8 +1,8 @@
 #include <fstream>
 #include <iostream>
 #include "common.hpp"
-
 #include "shader_utils.hpp"
+#include "ray.hpp"
 
 static const int Width = 200;
 static const int Height = 100;
@@ -34,6 +34,12 @@ static const GLushort indices[] = {0, 2, 1, 1, 2, 3};
 
 static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
+}
+
+Vector3 color(const Ray& r) {
+    Vector3 normalizedDirection = normalize(r.direction());
+    float t = 0.5f * (normalizedDirection.y() + 1.0f);
+    return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) + t * Vector3(0.5, 0.7f, 1.0f);
 }
 
 static void update(void *) {
@@ -186,10 +192,18 @@ int main(void) {
     // Initialize Textures
     pixels = new char[Width * Height * 3];
 
+    Vector3 lowerLeftCorner(-2.0f, -1.0f, -1.0f);
+    Vector3 horizontal(4.0f, 0.0f, 0.0f);
+    Vector3 vertical(0.0f, 2.0f, 0.0f);
+    Vector3 origin(0.0f, 0.0f, 0.0f);
+
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
-            Vector3 col(float(i) / float(Width), float(j) / float(Height), 0.2f);
+            float u = float(i) / float(Width);
+            float v = float(j) / float(Height);
+            Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical);
 
+            Vector3 col = color(ray);
             int ir = int(255.99f * col[0]);
             int ig = int(255.99f * col[1]);
             int ib = int(255.99f * col[2]);

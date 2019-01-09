@@ -1,3 +1,4 @@
+#pragma once
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
@@ -82,7 +83,15 @@ inline Vector3 operator*(const Vector3& v, float t) {
     return Vector3(t * v.e[0], t * v.e[1], t * v.e[2]);
 }
 
+inline Vector3 operator*(float t, const Vector3& v) {
+    return Vector3(t * v.e[0], t * v.e[1], t * v.e[2]);
+}
+
 inline Vector3 operator/(const Vector3& v, float t) {
+    return Vector3(v.e[0] / t, v.e[1] / t, v.e[2] / t);
+}
+
+inline Vector3 operator/(float t, const Vector3& v) {
     return Vector3(t / v.e[0], t / v.e[1], t / v.e[2]);
 }
 
