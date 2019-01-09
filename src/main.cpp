@@ -188,13 +188,11 @@ int main(void) {
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
-            float r = float(i) / float(Width);
-            float g = float(j) / float(Height);
-            float b = 0.2f;
+            Vector3 col(float(i) / float(Width), float(j) / float(Height), 0.2f);
 
-            int ir = int(255.99f * r);
-            int ig = int(255.99f * g);
-            int ib = int(255.99f * b);
+            int ir = int(255.99f * col[0]);
+            int ig = int(255.99f * col[1]);
+            int ib = int(255.99f * col[2]);
 
             int offset = (j * Width + i) * 3;
             pixels[offset + 0] = ir;
