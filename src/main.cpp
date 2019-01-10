@@ -36,22 +36,32 @@ static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
 }
 
-bool hitSphere(const Vector3 &center, float radius, const Ray &ray) {
+float hitSphere(const Vector3 &center, float radius, const Ray &ray) {
     Vector3 oc = ray.origin() - center;
     float a = dot(ray.direction(), ray.direction());
     float b = 2.0f * dot(oc, ray.direction());
     float c = dot(oc, oc) - radius * radius;
 
-    return b * b - 4.0f * a * c >= 0.0f;
+    float discriminant = b * b - 4.0f * a * c;
+
+    if (discriminant < 0) {
+        return -1.0f;
+    }
+
+    return (-b - sqrt(discriminant)) / (2.0f * a);
 }
 
 Vector3 color(const Ray& ray) {
-    if (hitSphere(Vector3(0.0f, 0.0f, -1.0f), 0.5f, ray)) {
-        return Vector3(1.0f, 0.0f, 0.0f);
+    Vector3 center = Vector3(0.0f, 0.0f, -1.0f);
+    float t = hitSphere(center, 0.5f, ray);
+
+    if (t > 0.0f) {
+        Vector3 N = normalize(ray.pointAtParameter(t) - center);
+        return 0.5f * Vector3(N[0] + 1.0f, N[1] + 1.0f, N[2] + 1.0f);
     }
 
     Vector3 normalizedDirection = normalize(ray.direction());
-    float t = 0.5f * (normalizedDirection.y() + 1.0f);
+    t = 0.5f * (normalizedDirection.y() + 1.0f);
     return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) + t * Vector3(0.5, 0.7f, 1.0f);
 }
 
@@ -205,8 +215,9 @@ int main(void) {
     // Initialize Textures
     pixels = new char[Width * Height * 3];
 
-    Vector3 lowerLeftCorner(-2.0f, -1.0f, -1.0f);
-    Vector3 horizontal(4.0f, 0.0f, 0.0f);
+    float aspectRatio = float(Width) / float(Height);
+    Vector3 lowerLeftCorner(-1.0f * aspectRatio, -1.0f, -1.0f);
+    Vector3 horizontal(2.0f * aspectRatio, 0.0f, 0.0f);
     Vector3 vertical(0.0f, 2.0f, 0.0f);
     Vector3 origin(0.0f, 0.0f, 0.0f);
 
