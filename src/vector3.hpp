@@ -20,7 +20,7 @@ class Vector3 {
     inline float b() const { return e[2]; }
 
     inline const Vector3& operator+() const { return *this; }
-    inline const Vector3& operator-() const {
+    inline const Vector3 operator-() const {
         return Vector3(-e[0], -e[1], -e[2]);
     }
     inline float operator[](int i) const { return e[i]; }
@@ -41,7 +41,7 @@ class Vector3 {
         return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
     }
 
-    inline void Vector3::normalize();
+    inline void normalize();
 
     float e[3];
 };
