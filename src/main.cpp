@@ -1,8 +1,11 @@
+#include <float.h>
 #include <fstream>
 #include <iostream>
 #include "common.hpp"
 #include "shader_utils.hpp"
-#include "ray.hpp"
+
+#include "sphere.hpp"
+#include "hittable_list.hpp"
 
 static const int Width = 200;
 static const int Height = 100;
