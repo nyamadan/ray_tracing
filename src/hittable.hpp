@@ -9,6 +9,8 @@ struct HitRecord {
     Vector3 normal;
 };
 
-struct Hittable {
-    virtual bool hit(const Ray &ray, float tMin, float tMax, HitRecord hitRecord) = 0;
+class Hittable {
+   public:
+    virtual bool hit(const Ray& ray, float tMin, float tMax,
+                     HitRecord& hitRecord) const = 0;
 };

@@ -1,21 +1,19 @@
-#include "common.hpp"
 #include "shader_utils.hpp"
+#include "common.hpp"
 
 #include <iostream>
 
 #ifdef __EMSCRIPTEN__
-const char* const GlslVersion = "#version 300 es\n";
+const char *const GlslVersion = "#version 300 es\n";
 #else
-const char* const GlslVersion = "#version 330 core\n";
+const char *const GlslVersion = "#version 330 core\n";
 #endif
 
-int checkLinked(unsigned int program)
-{
+int checkLinked(unsigned int program) {
     GLint success = 0;
     glGetProgramiv(program, GL_LINK_STATUS, &success);
 
-    if (success == GL_FALSE)
-    {
+    if (success == GL_FALSE) {
         int max_len = 0;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &max_len);
 
@@ -29,13 +27,11 @@ int checkLinked(unsigned int program)
     return success;
 }
 
-int checkCompiled(unsigned int shader)
-{
+int checkCompiled(unsigned int shader) {
     GLint success = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
-    if (success == GL_FALSE)
-    {
+    if (success == GL_FALSE) {
         int max_len = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &max_len);
 

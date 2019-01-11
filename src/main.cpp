@@ -4,8 +4,8 @@
 #include "common.hpp"
 #include "shader_utils.hpp"
 
-#include "sphere.hpp"
 #include "hittable_list.hpp"
+#include "sphere.hpp"
 
 static const int Width = 200;
 static const int Height = 100;
@@ -39,33 +39,18 @@ static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
 }
 
-float hitSphere(const Vector3 &center, float radius, const Ray &ray) {
-    Vector3 oc = ray.origin() - center;
-    float a = dot(ray.direction(), ray.direction());
-    float b = 2.0f * dot(oc, ray.direction());
-    float c = dot(oc, oc) - radius * radius;
+Vector3 color(const Ray &ray, Hittable *world) {
+    HitRecord rec;
 
-    float discriminant = b * b - 4.0f * a * c;
-
-    if (discriminant < 0) {
-        return -1.0f;
-    }
-
-    return (-b - sqrt(discriminant)) / (2.0f * a);
-}
-
-Vector3 color(const Ray& ray) {
-    Vector3 center = Vector3(0.0f, 0.0f, -1.0f);
-    float t = hitSphere(center, 0.5f, ray);
-
-    if (t > 0.0f) {
-        Vector3 N = normalize(ray.pointAtParameter(t) - center);
-        return 0.5f * Vector3(N[0] + 1.0f, N[1] + 1.0f, N[2] + 1.0f);
+    if (world->hit(ray, 0.0f, FLT_MAX, rec)) {
+        return 0.5f * Vector3(rec.normal[0] + 1.0f, rec.normal[1] + 1.0f,
+                              rec.normal[2] + 1.0f);
     }
 
     Vector3 normalizedDirection = normalize(ray.direction());
-    t = 0.5f * (normalizedDirection.y() + 1.0f);
-    return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) + t * Vector3(0.5, 0.7f, 1.0f);
+    float t = 0.5f * (normalizedDirection.y() + 1.0f);
+    return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) +
+           t * Vector3(0.5f, 0.7f, 1.0f);
 }
 
 static void update(void *) {
@@ -224,13 +209,19 @@ int main(void) {
     Vector3 vertical(0.0f, 2.0f, 0.0f);
     Vector3 origin(0.0f, 0.0f, 0.0f);
 
+    Hittable *list[2];
+    list[0] = new Sphere(Vector3(0.0f, 0.0f, -1.0f), 0.5f);
+    list[1] = new Sphere(Vector3(0.0f, -100.5f, -1.0f), 100.0f);
+
+    HittableList *world = new HittableList(list, 2);
+
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
             float u = float(i) / float(Width);
             float v = float(j) / float(Height);
             Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical);
 
-            Vector3 col = color(ray);
+            Vector3 col = color(ray, world);
             int ir = int(255.99f * col[0]);
             int ig = int(255.99f * col[1]);
             int ib = int(255.99f * col[2]);
