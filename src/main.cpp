@@ -2,6 +2,13 @@
 #include <random>
 #include <fstream>
 #include <iostream>
+
+#include <stb_image_write.h>
+
+#include <imgui.h>
+#include <examples/imgui_impl_glfw.h>
+#include <examples/imgui_impl_opengl3.h>
+
 #include "common.hpp"
 #include "shader_utils.hpp"
 
@@ -80,7 +87,7 @@ glm::vec3 getColor(const Ray &ray, Hittable *world, int depth) {
 
 static void update(void *) {
     static bool showDemoWindow = false;
-    static bool showDebugWindow = false;
+    static bool showDebugWindow = true;
     static int width, height;
     static double xpos, ypos;
 
@@ -92,6 +99,7 @@ static void update(void *) {
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
+        ImGui::Text("Width: %d, Height: %d, Steps: %d", Width, Height, Step);
 
         ImGui::Checkbox("Demo Window",
                         &showDemoWindow);  // Edit bools storing our windows
@@ -296,6 +304,10 @@ int main(void) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    const int NumComponents = 3;
+    stbi_flip_vertically_on_write(1);
+    stbi_write_png("result.png", Width, Height, NumComponents, pixels, NumComponents * Width);
 
     delete[] pixels;
 
