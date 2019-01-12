@@ -10,9 +10,9 @@
 #include "material.hpp"
 #include "sphere.hpp"
 
-static const int Width = 200;
-static const int Height = 100;
-static const int Step = 100;
+static const int Width = 1024;
+static const int Height = 768;
+static const int Step = 300;
 
 static const int PositionLocation = 0;
 static const int PositionSize = 3;

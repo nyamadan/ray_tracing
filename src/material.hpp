@@ -1,46 +1,47 @@
 #pragma once
 
-Vector3 randomInUnitSphere();
+glm::vec3 randomInUnitSphere();
 
 class Material {
    public:
     virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord,
-                         Vector3& attenuation, Ray& scattered) const = 0;
+                         glm::vec3& attenuation, Ray& scattered) const = 0;
     virtual ~Material() {}
 };
 
 class Lambertian : public Material {
    public:
-    Lambertian(const Vector3& a) : albedo(a) {}
+    Lambertian(const glm::vec3& a) : albedo(a) {}
 
     virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord,
-                         Vector3& attenuation, Ray& scattered) const {
-        Vector3 target = hitRecord.p + hitRecord.normal + randomInUnitSphere();
+                         glm::vec3& attenuation, Ray& scattered) const {
+        glm::vec3 target =
+            hitRecord.p + hitRecord.normal + randomInUnitSphere();
         scattered = Ray(hitRecord.p, target - hitRecord.p);
         attenuation = albedo;
         return true;
     }
 
-    Vector3 albedo;
+    glm::vec3 albedo;
 };
 
-Vector3 reflect(const Vector3& v, const Vector3& n) {
-    return v - 2 * Vector3::dot(v, n) * n;
+glm::vec3 reflect(const glm::vec3& v, const glm::vec3& n) {
+    return v - 2 * glm::dot(v, n) * n;
 }
 
 class Metal : public Material {
    public:
-    Metal(const Vector3& a, const float f) : albedo(a), fuzz(f) {}
+    Metal(const glm::vec3& a, const float f) : albedo(a), fuzz(f) {}
 
     virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord,
-                         Vector3& attenuation, Ray& scattered) const {
-        Vector3 reflected =
-            reflect(Vector3::normalize(rayIn.direction()), hitRecord.normal);
+                         glm::vec3& attenuation, Ray& scattered) const {
+        glm::vec3 reflected =
+            reflect(glm::normalize(rayIn.direction()), hitRecord.normal);
         scattered = Ray(hitRecord.p, reflected + fuzz * randomInUnitSphere());
         attenuation = albedo;
-        return (Vector3::dot(scattered.direction(), hitRecord.normal)) > 0.0f;
+        return (glm::dot(scattered.direction(), hitRecord.normal)) > 0.0f;
     }
 
-    Vector3 albedo;
+    glm::vec3 albedo;
     float fuzz;
 };

@@ -20,6 +20,7 @@ set(IMGUI_SOURCES
 )
 
 #GLM
+add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 include_directories(./glm)
 
 # Imgui
