@@ -6,6 +6,8 @@
 class Vector3 {
    public:
     static inline Vector3 normalize(const Vector3& v);
+    static inline float dot(const Vector3& v1, const Vector3& v2);
+    static inline Vector3 cross(Vector3& v1, const Vector3& v2);
 
     Vector3() {}
     Vector3(float e0, float e1, float e2) {
@@ -97,11 +99,11 @@ inline Vector3 operator/(float t, const Vector3& v) {
     return Vector3(t / v.e[0], t / v.e[1], t / v.e[2]);
 }
 
-inline float dot(const Vector3& v1, const Vector3& v2) {
+inline float Vector3::dot(const Vector3& v1, const Vector3& v2) {
     return v1.e[0] * v2.e[0] + v1.e[1] * v2.e[1] + v1.e[2] * v2.e[2];
 }
 
-inline Vector3 cross(Vector3& v1, const Vector3& v2) {
+inline Vector3 Vector3::cross(Vector3& v1, const Vector3& v2) {
     return Vector3(v1.e[1] * v2.e[2] - v1.e[2] * v2.e[1],
                    v1.e[2] * v2.e[0] - v1.e[0] * v2.e[2],
                    v1.e[0] * v2.e[1] - v1.e[1] * v2.e[0]);

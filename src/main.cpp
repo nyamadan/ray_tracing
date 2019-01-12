@@ -7,6 +7,7 @@
 
 #include "camera.hpp"
 #include "hittable_list.hpp"
+#include "material.hpp"
 #include "sphere.hpp"
 
 static const int Width = 200;
@@ -57,12 +58,18 @@ Vector3 randomInUnitSphere() {
     return p;
 }
 
-Vector3 getColor(const Ray &ray, Hittable *world) {
-    HitRecord rec;
+Vector3 getColor(const Ray &ray, Hittable *world, int depth) {
+    HitRecord hitRecord;
 
-    if (world->hit(ray, 0.001f, FLT_MAX, rec)) {
-        Vector3 target = rec.p + rec.normal + randomInUnitSphere();
-        return 0.5f * getColor(Ray(rec.p, target - rec.p), world);
+    if (world->hit(ray, 0.001f, FLT_MAX, hitRecord)) {
+        Ray scatterd;
+        Vector3 attenuation;
+        if (depth < 50 && hitRecord.pMaterial->scatter(ray, hitRecord,
+                                                       attenuation, scatterd)) {
+            return attenuation * getColor(scatterd, world, depth + 1);
+        }
+
+        return Vector3(0.0f, 0.0f, 0.0f);
     }
 
     Vector3 normalizedDirection = Vector3::normalize(ray.direction());
@@ -176,8 +183,8 @@ int main(void) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     float scl = 1024.0f / Width;
-    window =
-        glfwCreateWindow(Width * scl, Height * scl, "Ray Tracing", NULL, NULL);
+    window = glfwCreateWindow(int(Width * scl), int(Height * scl),
+                              "Ray Tracing", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -229,11 +236,16 @@ int main(void) {
     Vector3 vertical(0.0f, 2.0f, 0.0f);
     Vector3 origin(0.0f, 0.0f, 0.0f);
 
-    Hittable *list[2];
-    list[0] = new Sphere(Vector3(0.0f, 0.0f, -1.0f), 0.5f);
-    list[1] = new Sphere(Vector3(0.0f, -100.5f, -1.0f), 100.0f);
-
-    HittableList *world = new HittableList(list, 2);
+    Hittable *list[4];
+    list[0] = new Sphere(Vector3(0.0f, 0.0f, -1.0f), 0.5f,
+                         new Lambertian(Vector3(0.8f, 0.3f, 0.3f)));
+    list[1] = new Sphere(Vector3(0.0f, -100.5f, -1.0f), 100.0f,
+                         new Lambertian(Vector3(0.8f, 0.8f, 0.0f)));
+    list[2] = new Sphere(Vector3(1.0f, 0.0f, -1.0f), 0.5f,
+                         new Metal(Vector3(0.8f, 0.6f, 0.2f), 1.0f));
+    list[3] = new Sphere(Vector3(-1.0f, 0.0f, -1.0f), 0.5f,
+                         new Metal(Vector3(0.8f, 0.8f, 0.8f), 0.3f));
+    HittableList *world = new HittableList(list, 4);
 
     Camera camera = Camera(float(Width) / float(Height));
 
@@ -248,13 +260,10 @@ int main(void) {
             for (int s = 0; s < Step; s++) {
                 float u = float(i + random(randomEngine)) / float(Width);
                 float v = float(j + random(randomEngine)) / float(Height);
-                Ray ray(origin,
-                        lowerLeftCorner + u * horizontal + v * vertical);
-
-                color += getColor(ray, world);
+                Ray ray = camera.getRay(u, v);
+                color += getColor(ray, world, 0) / float(Step);
             }
 
-            color /= float(Step);
             color = Vector3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
 
             int ir = int(255.99f * color[0]);
@@ -268,8 +277,14 @@ int main(void) {
         }
     }
 
+    delete list[0]->pMaterial;
+    delete list[1]->pMaterial;
+    delete list[2]->pMaterial;
+    delete list[3]->pMaterial;
     delete list[0];
     delete list[1];
+    delete list[2];
+    delete list[3];
     delete world;
 
     glGenTextures(1, &texImage0);
@@ -277,8 +292,6 @@ int main(void) {
     glBindTexture(GL_TEXTURE_2D, texImage0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Width, Height, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, pixels);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
