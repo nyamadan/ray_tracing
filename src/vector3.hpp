@@ -5,6 +5,8 @@
 
 class Vector3 {
    public:
+    static inline Vector3 normalize(const Vector3& v);
+
     Vector3() {}
     Vector3(float e0, float e1, float e2) {
         e[0] = e0;
@@ -154,4 +156,4 @@ inline Vector3& Vector3::operator/=(const float t) {
     return *this;
 }
 
-inline Vector3 normalize(Vector3 v) { return v / v.length(); }
+inline Vector3 Vector3::normalize(const Vector3& v) { return v / v.length(); }

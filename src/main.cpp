@@ -1,14 +1,17 @@
 #include <float.h>
+#include <random>
 #include <fstream>
 #include <iostream>
 #include "common.hpp"
 #include "shader_utils.hpp"
 
+#include "camera.hpp"
 #include "hittable_list.hpp"
 #include "sphere.hpp"
 
 static const int Width = 200;
 static const int Height = 100;
+static const int Step = 100;
 
 static const int PositionLocation = 0;
 static const int PositionSize = 3;
@@ -39,7 +42,7 @@ static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
 }
 
-Vector3 color(const Ray &ray, Hittable *world) {
+Vector3 getColor(const Ray &ray, Hittable *world) {
     HitRecord rec;
 
     if (world->hit(ray, 0.0f, FLT_MAX, rec)) {
@@ -47,7 +50,7 @@ Vector3 color(const Ray &ray, Hittable *world) {
                               rec.normal[2] + 1.0f);
     }
 
-    Vector3 normalizedDirection = normalize(ray.direction());
+    Vector3 normalizedDirection = Vector3::normalize(ray.direction());
     float t = 0.5f * (normalizedDirection.y() + 1.0f);
     return (1.0f - t) * Vector3(1.0f, 1.0f, 1.0f) +
            t * Vector3(0.5f, 0.7f, 1.0f);
@@ -215,16 +218,28 @@ int main(void) {
 
     HittableList *world = new HittableList(list, 2);
 
+    Camera camera = Camera(float(Width) / float(Height));
+
+    std::random_device seed;
+    std::mt19937 engine(seed());
+    std::uniform_real_distribution<float> random(-0.5f, 0.5f);
+
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
-            float u = float(i) / float(Width);
-            float v = float(j) / float(Height);
-            Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical);
+            Vector3 color(0.0f, 0.0f, 0.0f);
+            for (int s = 0; s < Step; s++) {
+                float u = float(i + random(engine)) / float(Width);
+                float v = float(j + random(engine)) / float(Height);
+                Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical);
 
-            Vector3 col = color(ray, world);
-            int ir = int(255.99f * col[0]);
-            int ig = int(255.99f * col[1]);
-            int ib = int(255.99f * col[2]);
+                color += getColor(ray, world);
+            }
+
+            color /= float(Step);
+
+            int ir = int(255.99f * color[0]);
+            int ig = int(255.99f * color[1]);
+            int ib = int(255.99f * color[2]);
 
             int offset = (j * Width + i) * 3;
             pixels[offset + 0] = ir;
@@ -232,6 +247,10 @@ int main(void) {
             pixels[offset + 2] = ib;
         }
     }
+
+    delete list[0];
+    delete list[1];
+    delete world;
 
     glGenTextures(1, &texImage0);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
