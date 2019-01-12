@@ -16,6 +16,8 @@ static const int Step = 100;
 static const int PositionLocation = 0;
 static const int PositionSize = 3;
 
+static std::mt19937 randomEngine;
+
 static GLFWwindow *window = nullptr;
 
 static GLuint vIndex = 0;
@@ -42,12 +44,25 @@ static void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
 }
 
+Vector3 randomInUnitSphere() {
+    std::uniform_real_distribution<float> random(-1.0f, 1.0f);
+
+    Vector3 p;
+
+    do {
+        p = Vector3(random(randomEngine), random(randomEngine),
+                    random(randomEngine));
+    } while (p.lengthSq() < 1.0f);
+
+    return p;
+}
+
 Vector3 getColor(const Ray &ray, Hittable *world) {
     HitRecord rec;
 
-    if (world->hit(ray, 0.0f, FLT_MAX, rec)) {
-        return 0.5f * Vector3(rec.normal[0] + 1.0f, rec.normal[1] + 1.0f,
-                              rec.normal[2] + 1.0f);
+    if (world->hit(ray, 0.001f, FLT_MAX, rec)) {
+        Vector3 target = rec.p + rec.normal + randomInUnitSphere();
+        return 0.5f * getColor(Ray(rec.p, target - rec.p), world);
     }
 
     Vector3 normalizedDirection = Vector3::normalize(ray.direction());
@@ -160,7 +175,9 @@ int main(void) {
 
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    window = glfwCreateWindow(Width, Height, "Ray Tracing", NULL, NULL);
+    float scl = 1024.0f / Width;
+    window =
+        glfwCreateWindow(Width * scl, Height * scl, "Ray Tracing", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -221,21 +238,24 @@ int main(void) {
     Camera camera = Camera(float(Width) / float(Height));
 
     std::random_device seed;
-    std::mt19937 engine(seed());
+    randomEngine = std::mt19937(seed());
+
     std::uniform_real_distribution<float> random(-0.5f, 0.5f);
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
             Vector3 color(0.0f, 0.0f, 0.0f);
             for (int s = 0; s < Step; s++) {
-                float u = float(i + random(engine)) / float(Width);
-                float v = float(j + random(engine)) / float(Height);
-                Ray ray(origin, lowerLeftCorner + u * horizontal + v * vertical);
+                float u = float(i + random(randomEngine)) / float(Width);
+                float v = float(j + random(randomEngine)) / float(Height);
+                Ray ray(origin,
+                        lowerLeftCorner + u * horizontal + v * vertical);
 
                 color += getColor(ray, world);
             }
 
             color /= float(Step);
+            color = Vector3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
 
             int ir = int(255.99f * color[0]);
             int ig = int(255.99f * color[1]);
@@ -257,6 +277,8 @@ int main(void) {
     glBindTexture(GL_TEXTURE_2D, texImage0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Width, Height, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, pixels);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
