@@ -16,7 +16,7 @@ class HittableList : public Hittable {
         bool hitAnything = false;
         float closestSoFar = tMax;
 
-        for (auto i = 0; i < listSize; i++) {
+        for (int i = 0; i < listSize; i++) {
             if (list[i]->hit(r, tMin, closestSoFar, tempRec)) {
                 hitAnything = true;
                 closestSoFar = tempRec.t;

@@ -21,10 +21,6 @@
 #include "sphere.hpp"
 
 namespace {
-const int Width = 200;
-const int Height = 100;
-const int Step = 100;
-
 const int PositionLocation = 0;
 const int PositionSize = 3;
 
@@ -74,6 +70,50 @@ glm::vec3 getColor(const Ray &ray, Hittable *world, int depth) {
            t * glm::vec3(0.5f, 0.7f, 1.0f);
 }
 
+HittableList *randomScene() {
+    int n = 500;
+    Hittable **list = new Hittable *[n + 1];
+    list[0] = new Sphere(glm::vec3(0.0f, -1000.0f, 0.0f), 1000.0f,
+                         new Lambertian(glm::vec3(0.5f, 0.5f, 0.5f)));
+
+    int i = 1;
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
+            float chooseMat = getRandom();
+            glm::vec3 center(a + 0.9f * getRandom(), 0.2f,
+                             b + 0.9f * getRandom());
+
+            if ((center - glm::vec3(4.0f, 0.2f, 0.0f)).length() > 0.9f) {
+                if (chooseMat < 0.8f) {
+                    list[i++] = new Sphere(
+                        center, 0.2f,
+                        new Lambertian(glm::vec3(getRandom() * getRandom(),
+                                                 getRandom() * getRandom(),
+                                                 getRandom() * getRandom())));
+                } else if (chooseMat < 0.95f) {
+                    list[i++] = new Sphere(
+                        center, 0.2f,
+                        new Metal(glm::vec3(0.5f * (1.0f + getRandom()),
+                                            0.5f * (1.0f + getRandom()),
+                                            0.5f * (1.0f + getRandom())),
+                                  0.5f * getRandom()));
+                } else {
+                    list[i++] = new Sphere(center, 0.2f, new Dielectric(1.5f));
+                }
+            }
+        }
+    }
+
+    list[i++] =
+        new Sphere(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, new Dielectric(1.5f));
+    list[i++] = new Sphere(glm::vec3(-4.0f, 1.0f, 0.0f), 1.0f,
+                           new Lambertian(glm::vec3(0.4f, 0.2f, 0.1f)));
+    list[i++] = new Sphere(glm::vec3(4.0f, 1.0f, 0.0f), 1.0f,
+                           new Metal(glm::vec3(0.7f, 0.6f, 0.5f), 0.0f));
+
+    return new HittableList(list, i);
+}
+
 static void update(void *) {
     static bool showDemoWindow = false;
     static bool showDebugWindow = true;
@@ -88,7 +128,6 @@ static void update(void *) {
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
-        ImGui::Text("Width: %d, Height: %d, Steps: %d", Width, Height, Step);
 
         ImGui::Checkbox("Demo Window",
                         &showDemoWindow);  // Edit bools storing our windows
@@ -158,10 +197,60 @@ static void readText(char *&memblock, const char *const path) {
 }  // namespace
 
 int main(void) {
-    initializeRandomEngine();
+    const int Width = 1200;
+    const int Height = 800;
+    const int Step = 10;
 
     /* Initialize the library */
     if (!glfwInit()) return -1;
+
+    initializeRandomEngine();
+
+    // Initialize Textures
+    pixels = new char[Width * Height * 3];
+
+    float aspect = float(Width) / float(Height);
+
+    HittableList *world = randomScene();
+
+    glm::vec3 lookFrom(13.0f, 2.0f, 3.0f);
+    glm::vec3 lookAt(0.0f, 0.0f, 0.0f);
+    float distToFocus = 10.0f;
+    float aperture = 0.1f;
+    Camera camera(lookFrom, lookAt, glm::vec3(0.0f, 1.0f, 0.0f), 20.0f, aspect,
+                  aperture, distToFocus);
+
+    for (int j = Height - 1; j >= 0; j--) {
+        for (int i = 0; i < Width; i++) {
+            glm::vec3 color(0.0f, 0.0f, 0.0f);
+            for (int s = 0; s < Step; s++) {
+                float u = float(i + getRandom()) / float(Width);
+                float v = float(j + getRandom()) / float(Height);
+                Ray ray = camera.getRay(u, v);
+                glm::vec3 p = ray.pointAtParameter(2.0f);
+                color += getColor(ray, world, 0);
+            }
+
+            color /= float(Step);
+            color = glm::vec3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
+
+            int ir = int(255.99f * color[0]);
+            int ig = int(255.99f * color[1]);
+            int ib = int(255.99f * color[2]);
+
+            int offset = (j * Width + i) * 3;
+            pixels[offset + 0] = ir;
+            pixels[offset + 1] = ig;
+            pixels[offset + 2] = ib;
+        }
+    }
+
+    for (int i = 0; i < world->listSize; i++) {
+        delete world->list[i]->pMaterial;
+        delete world->list[i];
+    }
+    delete world->list;
+    delete world;
 
 #ifdef __EMSCRIPTEN__
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -226,63 +315,6 @@ int main(void) {
     glEnableVertexAttribArray(0);
 
     glBindVertexArray(0);
-
-    // Initialize Textures
-    pixels = new char[Width * Height * 3];
-
-    float aspect = float(Width) / float(Height);
-
-    const int numGeometrys = 5;
-    Hittable *list[numGeometrys];
-    list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
-                         new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
-    list[1] = new Sphere(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f,
-                         new Lambertian(glm::vec3(0.8f, 0.8f, 0.0f)));
-    list[2] = new Sphere(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f,
-                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.125f));
-    list[3] =
-        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Dielectric(1.5f));
-    list[4] =
-        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, new Dielectric(1.5f));
-    HittableList *world = new HittableList(list, numGeometrys);
-
-    glm::vec3 lookFrom(3.0f, 3.0f, 2.0f);
-    glm::vec3 lookAt(0.0f, 0.0f, -1.0f);
-    float distToFocus = (lookFrom - lookAt).length();
-    float aperture = 2.0f;
-    Camera camera(lookFrom, lookAt, glm::vec3(0.0f, 1.0f, 0.0f), 20.0f, aspect,
-                  aperture, distToFocus);
-
-    for (int j = Height - 1; j >= 0; j--) {
-        for (int i = 0; i < Width; i++) {
-            glm::vec3 color(0.0f, 0.0f, 0.0f);
-            for (int s = 0; s < Step; s++) {
-                float u = float(i + getRandom()) / float(Width);
-                float v = float(j + getRandom()) / float(Height);
-                Ray ray = camera.getRay(u, v);
-                glm::vec3 p = ray.pointAtParameter(2.0f);
-                color += getColor(ray, world, 0);
-            }
-
-            color /= float(Step);
-            color = glm::vec3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
-
-            int ir = int(255.99f * color[0]);
-            int ig = int(255.99f * color[1]);
-            int ib = int(255.99f * color[2]);
-
-            int offset = (j * Width + i) * 3;
-            pixels[offset + 0] = ir;
-            pixels[offset + 1] = ig;
-            pixels[offset + 2] = ib;
-        }
-    }
-
-    for (int i = 0; i < numGeometrys; i++) {
-        delete list[i]->pMaterial;
-        delete list[i];
-    }
-    delete world;
 
     glGenTextures(1, &texImage0);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

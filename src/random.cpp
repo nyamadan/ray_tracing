@@ -4,16 +4,16 @@
 
 namespace {
 std::mt19937 randomEngine;
-std::uniform_real_distribution<float> random;
+std::uniform_real_distribution<float> rnd;
 }  // namespace
 
 void initializeRandomEngine() {
     std::random_device seed;
     randomEngine = std::mt19937(seed());
-    random = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    rnd = std::uniform_real_distribution<float>(0.0f, 1.0f);
 }
 
-float getRandom() { return random(randomEngine); }
+float getRandom() { return rnd(randomEngine); }
 
 glm::vec3 randomInUnitSphere() {
     glm::vec3 p;
