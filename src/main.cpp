@@ -1,6 +1,7 @@
 #include <float.h>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -243,7 +244,12 @@ int main(void) {
             pixels[offset + 1] = ig;
             pixels[offset + 2] = ib;
         }
+
+        std::cout << "Progress: " << std::fixed << std::setprecision(2)
+                  << (100.0f * (Height - 1 - j) / (Height - 1)) << "%\r"
+                  << std::flush;
     }
+    std::cout << std::endl;
 
     for (int i = 0; i < world->listSize; i++) {
         delete world->list[i]->pMaterial;
@@ -251,6 +257,12 @@ int main(void) {
     }
     delete world->list;
     delete world;
+
+    // File out.
+    const int NumComponents = 3;
+    stbi_flip_vertically_on_write(1);
+    stbi_write_png("result.png", Width, Height, NumComponents, pixels,
+                   NumComponents * Width);
 
 #ifdef __EMSCRIPTEN__
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -325,11 +337,6 @@ int main(void) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-
-    const int NumComponents = 3;
-    stbi_flip_vertically_on_write(1);
-    stbi_write_png("result.png", Width, Height, NumComponents, pixels,
-                   NumComponents * Width);
 
     delete[] pixels;
 
