@@ -6,3 +6,4 @@
 void initializeRandomEngine();
 float getRandom();
 glm::vec3 randomInUnitSphere();
+glm::vec3 randomInUnitDisk();

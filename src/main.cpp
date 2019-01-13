@@ -21,8 +21,8 @@
 #include "sphere.hpp"
 
 namespace {
-const int Width = 1024;
-const int Height = 768;
+const int Width = 200;
+const int Height = 100;
 const int Step = 100;
 
 const int PositionLocation = 0;
@@ -233,7 +233,6 @@ int main(void) {
     float aspect = float(Width) / float(Height);
 
     const int numGeometrys = 5;
-    auto R = cosf(M_PI / 4);
     Hittable *list[numGeometrys];
     list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
                          new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
@@ -247,19 +246,25 @@ int main(void) {
         new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, new Dielectric(1.5f));
     HittableList *world = new HittableList(list, numGeometrys);
 
-    Camera camera(glm::vec3(-2.0f, 2.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f),
-                  glm::vec3(0.0f, 1.0f, 0.0f), 30.0f, aspect);
+    glm::vec3 lookFrom(3.0f, 3.0f, 2.0f);
+    glm::vec3 lookAt(0.0f, 0.0f, -1.0f);
+    float distToFocus = (lookFrom - lookAt).length();
+    float aperture = 2.0f;
+    Camera camera(lookFrom, lookAt, glm::vec3(0.0f, 1.0f, 0.0f), 20.0f, aspect,
+                  aperture, distToFocus);
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
             glm::vec3 color(0.0f, 0.0f, 0.0f);
             for (int s = 0; s < Step; s++) {
-                float u = float(i + getRandom() - 0.5f) / float(Width);
-                float v = float(j + getRandom() - 0.5f) / float(Height);
+                float u = float(i + getRandom()) / float(Width);
+                float v = float(j + getRandom()) / float(Height);
                 Ray ray = camera.getRay(u, v);
-                color += getColor(ray, world, 0) / float(Step);
+                glm::vec3 p = ray.pointAtParameter(2.0f);
+                color += getColor(ray, world, 0);
             }
 
+            color /= float(Step);
             color = glm::vec3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
 
             int ir = int(255.99f * color[0]);
@@ -273,7 +278,7 @@ int main(void) {
         }
     }
 
-    for (auto i = 0; i < numGeometrys; i++) {
+    for (int i = 0; i < numGeometrys; i++) {
         delete list[i]->pMaterial;
         delete list[i];
     }

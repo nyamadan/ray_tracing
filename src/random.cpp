@@ -19,9 +19,19 @@ glm::vec3 randomInUnitSphere() {
     glm::vec3 p;
 
     do {
-        p = glm::vec3(2.0f * getRandom() - 1.0f, 2.0f * getRandom() - 1.0f,
-                      2.0f * getRandom() - 1.0f);
+        p = 2.0f * glm::vec3(getRandom(), getRandom(),getRandom()) - glm::vec3(1.0f, 1.0f, 1.0f);
     } while (glm::length2(p) < 1.0f);
+
+    return p;
+}
+
+glm::vec3 randomInUnitDisk() {
+    glm::vec3 p;
+
+    do {
+        p = 2.0f * glm::vec3(getRandom(), getRandom(), 0.0f) -
+            glm::vec3(1.0f, 1.0f, 0.0f);
+    } while (glm::dot(p, p) >= 1.0f);
 
     return p;
 }
