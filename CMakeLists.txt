@@ -48,7 +48,7 @@ elseif(MSVC)
     add_subdirectory(./glfw)
     include_directories(./glfw/include)
 
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES)
     add_executable(ray_tracing ${APP_SOURCES} ${IMGUI_SOURCES} ${GL3W_SOURCES})
     add_dependencies(ray_tracing glfw)
     target_link_libraries(ray_tracing ${OPENGL_LIBRARIES} glfw)

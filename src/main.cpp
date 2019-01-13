@@ -233,20 +233,16 @@ int main(void) {
     glm::vec3 vertical(0.0f, 2.0f, 0.0f);
     glm::vec3 origin(0.0f, 0.0f, 0.0f);
 
-    Hittable *list[5];
-    list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
-                         new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
-    list[1] = new Sphere(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f,
-                         new Lambertian(glm::vec3(0.8f, 0.8f, 0.0f)));
-    list[2] = new Sphere(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f,
-                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.125f));
-    list[3] =
-        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Dielectric(1.5f));
-    list[4] =
-        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, new Dielectric(1.5f));
-    HittableList *world = new HittableList(list, 5);
+    const int numGeometrys = 2;
+    auto R = cosf(M_PI / 4);
+    Hittable *list[numGeometrys];
+    list[0] = new Sphere(glm::vec3(-R, 0.0f, -1.0f), R,
+                         new Lambertian(glm::vec3(0.0f, 0.0f, 1.0f)));
+    list[1] = new Sphere(glm::vec3(R, 0.0f, -1.0f), R,
+                         new Lambertian(glm::vec3(1.0f, 0.0f, 0.0f)));
+    HittableList *world = new HittableList(list, numGeometrys);
 
-    Camera camera = Camera(float(Width) / float(Height));
+    Camera camera = Camera(120.0f, float(Width) / float(Height));
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
@@ -271,7 +267,7 @@ int main(void) {
         }
     }
 
-    for (auto i = 0; i < 5; i++) {
+    for (auto i = 0; i < numGeometrys; i++) {
         delete list[i]->pMaterial;
         delete list[i];
     }
