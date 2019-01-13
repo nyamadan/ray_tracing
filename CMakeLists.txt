@@ -3,6 +3,7 @@ project(ray_tracing VERSION 0.1.0)
 
 set(APP_SOURCES
     src/main.cpp
+    src/random.cpp
     src/shader_utils.cpp
 )
 

@@ -1,5 +1,4 @@
 #include <float.h>
-#include <random>
 #include <fstream>
 #include <iostream>
 
@@ -10,6 +9,7 @@
 #include <examples/imgui_impl_opengl3.h>
 
 #include "common.hpp"
+#include "random.hpp"
 #include "shader_utils.hpp"
 
 #include "camera.hpp"
@@ -17,52 +17,38 @@
 #include "material.hpp"
 #include "sphere.hpp"
 
-static const int Width = 200;
-static const int Height = 100;
-static const int Step = 100;
+namespace {
+const int Width = 200;
+const int Height = 100;
+const int Step = 100;
 
-static const int PositionLocation = 0;
-static const int PositionSize = 3;
+const int PositionLocation = 0;
+const int PositionSize = 3;
 
-static std::mt19937 randomEngine;
+GLFWwindow *window = nullptr;
 
-static GLFWwindow *window = nullptr;
+GLuint vIndex = 0;
+GLuint vPosition = 0;
+GLuint vertexArraysObject = 0;
 
-static GLuint vIndex = 0;
-static GLuint vPosition = 0;
-static GLuint vertexArraysObject = 0;
+GLint uTime = 0;
+GLint uMouse = 0;
+GLint uResolution = 0;
+GLint uImage0 = 0;
 
-static GLint uTime = 0;
-static GLint uMouse = 0;
-static GLint uResolution = 0;
-static GLint uImage0 = 0;
+GLuint texImage0 = 0;
 
-static GLuint texImage0 = 0;
+GLuint program = 0;
 
-static GLuint program = 0;
+char *pixels = nullptr;
 
-static char *pixels = nullptr;
+const GLfloat positions[] = {-1.0f, 1.0f,  0.0f, 1.0f, 1.0f,  0.0f,
+                             -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f};
 
-static const GLfloat positions[] = {-1.0f, 1.0f,  0.0f, 1.0f, 1.0f,  0.0f,
-                                    -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f};
+const GLushort indices[] = {0, 2, 1, 1, 2, 3};
 
-static const GLushort indices[] = {0, 2, 1, 1, 2, 3};
-
-static void glfw_error_callback(int error, const char *description) {
+void glfw_error_callback(int error, const char *description) {
     std::cerr << "error " << error << ": " << description << std::endl;
-}
-
-glm::vec3 randomInUnitSphere() {
-    std::uniform_real_distribution<float> random(-1.0f, 1.0f);
-
-    glm::vec3 p;
-
-    do {
-        p = glm::vec3(random(randomEngine), random(randomEngine),
-                      random(randomEngine));
-    } while (glm::length2(p) < 1.0f);
-
-    return p;
 }
 
 glm::vec3 getColor(const Ray &ray, Hittable *world, int depth) {
@@ -166,8 +152,11 @@ static void readText(char *&memblock, const char *const path) {
     memblock[size] = '\0';
     file.close();
 }
+}  // namespace
 
 int main(void) {
+    initializeRandomEngine();
+
     /* Initialize the library */
     if (!glfwInit()) return -1;
 
@@ -244,30 +233,27 @@ int main(void) {
     glm::vec3 vertical(0.0f, 2.0f, 0.0f);
     glm::vec3 origin(0.0f, 0.0f, 0.0f);
 
-    Hittable *list[4];
+    Hittable *list[5];
     list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
                          new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
     list[1] = new Sphere(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f,
                          new Lambertian(glm::vec3(0.8f, 0.8f, 0.0f)));
     list[2] = new Sphere(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f,
-                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f));
-    list[3] = new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f,
-                         new Dielectric(1.5f));
-    HittableList *world = new HittableList(list, 4);
+                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.125f));
+    list[3] =
+        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Dielectric(1.5f));
+    list[4] =
+        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, new Dielectric(1.5f));
+    HittableList *world = new HittableList(list, 5);
 
     Camera camera = Camera(float(Width) / float(Height));
-
-    std::random_device seed;
-    randomEngine = std::mt19937(seed());
-
-    std::uniform_real_distribution<float> random(-0.5f, 0.5f);
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
             glm::vec3 color(0.0f, 0.0f, 0.0f);
             for (int s = 0; s < Step; s++) {
-                float u = float(i + random(randomEngine)) / float(Width);
-                float v = float(j + random(randomEngine)) / float(Height);
+                float u = float(i + getRandom() - 0.5f) / float(Width);
+                float v = float(j + getRandom() - 0.5f) / float(Height);
                 Ray ray = camera.getRay(u, v);
                 color += getColor(ray, world, 0) / float(Step);
             }
@@ -285,14 +271,10 @@ int main(void) {
         }
     }
 
-    delete list[0]->pMaterial;
-    delete list[1]->pMaterial;
-    delete list[2]->pMaterial;
-    delete list[3]->pMaterial;
-    delete list[0];
-    delete list[1];
-    delete list[2];
-    delete list[3];
+    for (auto i = 0; i < 5; i++) {
+        delete list[i]->pMaterial;
+        delete list[i];
+    }
     delete world;
 
     glGenTextures(1, &texImage0);
@@ -307,7 +289,8 @@ int main(void) {
 
     const int NumComponents = 3;
     stbi_flip_vertically_on_write(1);
-    stbi_write_png("result.png", Width, Height, NumComponents, pixels, NumComponents * Width);
+    stbi_write_png("result.png", Width, Height, NumComponents, pixels,
+                   NumComponents * Width);
 
     delete[] pixels;
 

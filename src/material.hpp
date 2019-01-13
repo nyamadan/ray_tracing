@@ -1,7 +1,5 @@
 #pragma once
 
-glm::vec3 randomInUnitSphere();
-
 class Material {
    public:
     virtual bool scatter(const Ray& rayIn, const HitRecord& hitRecord,
@@ -59,6 +57,12 @@ bool refract(const glm::vec3& v, const glm::vec3& n, float niOverNt,
     return false;
 }
 
+float schlick(float cosine, float refIdx) {
+    auto r0 = (1.0f - refIdx) / (1.0f + refIdx);
+    r0 = r0 * r0;
+    return r0 + (1.0f - r0) * pow((1 - cosine), 5);
+}
+
 class Dielectric : public Material {
    public:
     Dielectric(float ri) : refIdx(ri) {}
@@ -71,19 +75,30 @@ class Dielectric : public Material {
         attenuation = glm::vec3(1.0f, 1.0f, 1.0f);
 
         glm::vec3 refracted;
-        if (glm::dot(rayIn.direction(), hitRecord.normal) > 0) {
+        float reflectProb;
+        float cosine;
+        if (glm::dot(rayIn.direction(), hitRecord.normal) > 0.0f) {
             outwardNormal = -hitRecord.normal;
             niOverNt = refIdx;
+            cosine = refIdx * dot(rayIn.direction(), hitRecord.normal) /
+                     rayIn.direction().length();
         } else {
             outwardNormal = hitRecord.normal;
             niOverNt = 1.0f / refIdx;
+            cosine = -dot(rayIn.direction(), hitRecord.normal) /
+                     rayIn.direction().length();
         }
 
-        if (refract(rayIn.direction(), outwardNormal, niOverNt, refracted) >
-            0.0f) {
-            scattered = Ray(hitRecord.p, refracted);
+        if (refract(rayIn.direction(), outwardNormal, niOverNt, refracted)) {
+            reflectProb = schlick(cosine, refIdx);
         } else {
+            reflectProb = 1.0f;
+        }
+
+        if (getRandom() < reflectProb) {
             scattered = Ray(hitRecord.p, reflected);
+        } else {
+            scattered = Ray(hitRecord.p, refracted);
         }
 
         return true;
@@ -91,9 +106,3 @@ class Dielectric : public Material {
 
     float refIdx;
 };
-
-float schlick(float cosine, float refIdx) {
-    auto r0 = (1.0f - refIdx) / (1.0f + refIdx);
-    r0 = r0 * r0;
-    return r0 + (1.0f - r0) * pow((1 - cosine), 5);
-}
