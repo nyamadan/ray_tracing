@@ -2,6 +2,9 @@
 #include <fstream>
 #include <iostream>
 
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
+
 #include <stb_image_write.h>
 
 #include <imgui.h>
@@ -18,8 +21,8 @@
 #include "sphere.hpp"
 
 namespace {
-const int Width = 200;
-const int Height = 100;
+const int Width = 1024;
+const int Height = 768;
 const int Step = 100;
 
 const int PositionLocation = 0;
@@ -227,22 +230,25 @@ int main(void) {
     // Initialize Textures
     pixels = new char[Width * Height * 3];
 
-    float aspectRatio = float(Width) / float(Height);
-    glm::vec3 lowerLeftCorner(-1.0f * aspectRatio, -1.0f, -1.0f);
-    glm::vec3 horizontal(2.0f * aspectRatio, 0.0f, 0.0f);
-    glm::vec3 vertical(0.0f, 2.0f, 0.0f);
-    glm::vec3 origin(0.0f, 0.0f, 0.0f);
+    float aspect = float(Width) / float(Height);
 
-    const int numGeometrys = 2;
+    const int numGeometrys = 5;
     auto R = cosf(M_PI / 4);
     Hittable *list[numGeometrys];
-    list[0] = new Sphere(glm::vec3(-R, 0.0f, -1.0f), R,
-                         new Lambertian(glm::vec3(0.0f, 0.0f, 1.0f)));
-    list[1] = new Sphere(glm::vec3(R, 0.0f, -1.0f), R,
-                         new Lambertian(glm::vec3(1.0f, 0.0f, 0.0f)));
+    list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
+                         new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
+    list[1] = new Sphere(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f,
+                         new Lambertian(glm::vec3(0.8f, 0.8f, 0.0f)));
+    list[2] = new Sphere(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f,
+                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.125f));
+    list[3] =
+        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f, new Dielectric(1.5f));
+    list[4] =
+        new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), -0.45f, new Dielectric(1.5f));
     HittableList *world = new HittableList(list, numGeometrys);
 
-    Camera camera = Camera(120.0f, float(Width) / float(Height));
+    Camera camera(glm::vec3(-2.0f, 2.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f),
+                  glm::vec3(0.0f, 1.0f, 0.0f), 30.0f, aspect);
 
     for (int j = Height - 1; j >= 0; j--) {
         for (int i = 0; i < Width; i++) {
