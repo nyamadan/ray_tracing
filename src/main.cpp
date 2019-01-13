@@ -202,9 +202,6 @@ int main(void) {
     const int Height = 800;
     const int Step = 10;
 
-    /* Initialize the library */
-    if (!glfwInit()) return -1;
-
     initializeRandomEngine();
 
     // Initialize Textures
@@ -263,6 +260,9 @@ int main(void) {
     stbi_flip_vertically_on_write(1);
     stbi_write_png("result.png", Width, Height, NumComponents, pixels,
                    NumComponents * Width);
+
+    /* Initialize the library */
+    if (!glfwInit()) return -1;
 
 #ifdef __EMSCRIPTEN__
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
