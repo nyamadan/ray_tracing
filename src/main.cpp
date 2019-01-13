@@ -246,13 +246,13 @@ int main(void) {
 
     Hittable *list[4];
     list[0] = new Sphere(glm::vec3(0.0f, 0.0f, -1.0f), 0.5f,
-                         new Lambertian(glm::vec3(0.8f, 0.3f, 0.3f)));
+                         new Lambertian(glm::vec3(0.1f, 0.2f, 0.5f)));
     list[1] = new Sphere(glm::vec3(0.0f, -100.5f, -1.0f), 100.0f,
                          new Lambertian(glm::vec3(0.8f, 0.8f, 0.0f)));
     list[2] = new Sphere(glm::vec3(1.0f, 0.0f, -1.0f), 0.5f,
-                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 1.0f));
+                         new Metal(glm::vec3(0.8f, 0.6f, 0.2f), 0.0f));
     list[3] = new Sphere(glm::vec3(-1.0f, 0.0f, -1.0f), 0.5f,
-                         new Metal(glm::vec3(0.8f, 0.8f, 0.8f), 0.3f));
+                         new Dielectric(1.5f));
     HittableList *world = new HittableList(list, 4);
 
     Camera camera = Camera(float(Width) / float(Height));
