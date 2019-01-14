@@ -3,7 +3,13 @@ project(ray_tracing VERSION 0.1.0)
 
 set(APP_SOURCES
     src/main.cpp
+    src/camera.cpp
+    src/material.cpp
+    src/hittable_list.cpp
+    src/sphere.cpp
     src/random.cpp
+    src/random_scene.cpp
+    src/ray_tracer.cpp
     src/shader_utils.cpp
 )
 
