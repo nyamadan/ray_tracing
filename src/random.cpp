@@ -19,7 +19,8 @@ glm::vec3 randomInUnitSphere() {
     glm::vec3 p;
 
     do {
-        p = 2.0f * glm::vec3(getRandom(), getRandom(),getRandom()) - glm::vec3(1.0f, 1.0f, 1.0f);
+        p = 2.0f * glm::vec3(getRandom(), getRandom(), getRandom()) -
+            glm::vec3(1.0f, 1.0f, 1.0f);
     } while (glm::length2(p) < 1.0f);
 
     return p;

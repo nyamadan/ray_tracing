@@ -7,7 +7,7 @@ HittableList::HittableList(Hittable **l, int n) {
 }
 
 bool HittableList::hit(const Ray &r, float tMin, float tMax,
-                                     HitRecord &rec) const {
+                       HitRecord &rec) const {
     HitRecord tempRec;
     bool hitAnything = false;
     float closestSoFar = tMax;
