@@ -130,8 +130,8 @@ static void readText(char *&memblock, const char *const path) {
 }  // namespace
 
 int main(void) {
-    const int Width = 64;
-    const int Height = 32;
+    const int Width = 640;
+    const int Height = 480;
     const int Step = 10;
 
     initializeRandomEngine();

@@ -13,7 +13,9 @@
 #include "ray_tracer.hpp"
 
 RayTracer::RayTracer(int w, int h, int s) : width(w), height(h), step(s) {
-    pixels = new char[w * h * 3];
+    int n = w * h * 3;
+    pixels = new char[n];
+    memset(pixels, 0, n);
 }
 
 RayTracer::~RayTracer() { delete pixels; }
@@ -38,28 +40,32 @@ glm::vec3 RayTracer::getColor(const Ray &ray, Hittable *world, int depth) {
            t * glm::vec3(0.5f, 0.7f, 1.0f);
 }
 
+void RayTracer::renderPixel(HittableList *world, Camera *camera, int i, int j) {
+    glm::vec3 color(0.0f, 0.0f, 0.0f);
+    for (int s = 0; s < step; s++) {
+        float u = float(i + getRandom()) / float(width);
+        float v = float(j + getRandom()) / float(height);
+        Ray ray = camera->getRay(u, v);
+        color += getColor(ray, world, 0);
+    }
+
+    color /= float(step);
+    color = glm::vec3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
+
+    int ir = int(255.99f * color[0]);
+    int ig = int(255.99f * color[1]);
+    int ib = int(255.99f * color[2]);
+
+    int offset = (j * width + i) * 3;
+    pixels[offset + 0] = ir;
+    pixels[offset + 1] = ig;
+    pixels[offset + 2] = ib;
+}
+
 void RayTracer::render(HittableList *world, Camera *camera) {
     for (int j = height - 1; j >= 0; j--) {
         for (int i = 0; i < width; i++) {
-            glm::vec3 color(0.0f, 0.0f, 0.0f);
-            for (int s = 0; s < step; s++) {
-                float u = float(i + getRandom()) / float(width);
-                float v = float(j + getRandom()) / float(height);
-                Ray ray = camera->getRay(u, v);
-                color += getColor(ray, world, 0);
-            }
-
-            color /= float(step);
-            color = glm::vec3(sqrt(color[0]), sqrt(color[1]), sqrt(color[2]));
-
-            int ir = int(255.99f * color[0]);
-            int ig = int(255.99f * color[1]);
-            int ib = int(255.99f * color[2]);
-
-            int offset = (j * width + i) * 3;
-            pixels[offset + 0] = ir;
-            pixels[offset + 1] = ig;
-            pixels[offset + 2] = ib;
+            renderPixel(world, camera, i, j);
         }
 
         std::cout << "Progress: " << std::fixed << std::setprecision(2)
